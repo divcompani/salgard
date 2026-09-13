@@ -118,11 +118,12 @@ $('answerForm').onsubmit = event => {
   const c = clues[index];
   if (!c.answers.some(answer => normalize(answer) === normalize($('answer').value))) {
     $('feedback').textContent = 'این جواب با خاطره جور نیست. دوباره فکر کن؛ ذره‌بین هم می‌تواند کمکت کند.';
-    $('answer').setAttribute('aria-invalid', 'true'); return;
+    $('answer').setAttribute('aria-invalid', 'true'); playAnswerEffect(false); return;
   }
   stopInspection(); solved = true;
   $('answerForm').hidden = true; $('hint').hidden = true; $('inspect').parentElement.hidden = true;
   $('feedback').classList.add('ok'); $('feedback').textContent = 'درست کشف کردی.';
+  playAnswerEffect(true);
   pieces[index].textContent = c.piece; pieces[index].classList.add('found');
   steps[index].classList.add('complete');
   $('solvedCount').textContent = faNumber(index + 1) + ' / ۵';
@@ -145,9 +146,10 @@ $('unlockForm').onsubmit = event => {
   event.preventDefault();
   if (opening || index !== clues.length - 1 || !solved) return;
   if (normalize($('password').value) !== normalize('فهیمه')) {
-    $('lockFeedback').textContent = 'پنج حرف را از راست کنار هم بخوان؛ فقط اسم کوچک کافی است.'; return;
+    $('lockFeedback').textContent = 'پنج حرف را از راست کنار هم بخوان؛ فقط اسم کوچک کافی است.'; playAnswerEffect(false); return;
   }
   opening = true;
+  playAnswerEffect(true);
   switchMusic('romance');
   const curtain = $('curtain'); curtain.classList.remove('open'); curtain.hidden = false;
   show('letterView'); $('letterView').setAttribute('inert', '');
@@ -229,4 +231,15 @@ if (media.couple) {
   });
   image.addEventListener('error', () => { $('photoPair').hidden = true; });
   image.src = media.couple;
+}
+
+// Short, non-overlapping answer cues; sound failure must never block the game.
+function playAnswerEffect(correct) {
+  if (!musicEnabled) return;
+  const success = $('correctAudio'), failure = $('incorrectAudio');
+  success.pause(); failure.pause();
+  const effect = correct ? success : failure;
+  effect.currentTime = 0;
+  effect.volume = 0.65;
+  effect.play().catch(() => {});
 }
